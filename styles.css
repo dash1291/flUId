@@ -1,0 +1,393 @@
+/* flUId Widget Styles — CSS Custom Properties */
+
+:root {
+  /* Surface */
+  --fluid-surface: #f9f9f7;
+
+  /* Card */
+  --fluid-card: #fff;
+
+  /* Border */
+  --fluid-border: #e8e8e4;
+
+  /* Accent */
+  --fluid-accent: #2563eb;
+  --fluid-accent-hover: #1d4ed8;
+
+  /* Text */
+  --fluid-text: #111;
+  --fluid-text-muted: #888;
+
+  /* Success / Fail */
+  --fluid-correct: #16a34a;
+  --fluid-correct-bg: #dcfce7;
+  --fluid-wrong: #dc2626;
+  --fluid-wrong-bg: #fee2e2;
+}
+
+/* ---- Exercise Card ---- */
+
+.exercise-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--fluid-card);
+  border: 1px solid var(--fluid-border);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.exercise-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exercise-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fluid-text-muted);
+}
+
+.exercise-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fluid-text);
+}
+
+.submitted-label {
+  font-size: 13px;
+  color: var(--fluid-text-muted);
+  margin: 0;
+}
+
+/* ---- Buttons ---- */
+
+.btn-primary {
+  padding: 10px 20px;
+  background: var(--fluid-accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--fluid-accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- Lesson card ---- */
+
+.lesson-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--fluid-text);
+}
+
+.lesson-content p { margin: 0; }
+
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--fluid-border);
+  padding-top: 12px;
+}
+
+.example-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.example-native { font-weight: 500; color: var(--fluid-text); }
+.example-translation { color: var(--fluid-text-muted); }
+
+/* ---- Flashcard ---- */
+
+.flashcard-face {
+  min-height: 120px;
+  background: var(--fluid-surface);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 20px;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.flashcard-face:hover { background: #f0f0ee; }
+
+.flashcard-front,
+.flashcard-back {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.flashcard-word {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fluid-text);
+}
+
+.flashcard-hint {
+  font-size: 12px;
+  color: var(--fluid-text-muted);
+  margin: 0;
+}
+
+.flashcard-pronunciation,
+.flashcard-context {
+  font-size: 13px;
+  color: var(--fluid-text-muted);
+  margin: 0;
+}
+
+.flashcard-pronunciation { font-style: italic; }
+
+.rating-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-rating-again,
+.btn-rating-hard,
+.btn-rating-good,
+.btn-rating-easy {
+  flex: 1;
+  padding: 8px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-rating-again { background: #fee2e2; color: #b91c1c; }
+.btn-rating-hard  { background: #ffedd5; color: #c2410c; }
+.btn-rating-good  { background: #dcfce7; color: #15803d; }
+.btn-rating-easy  { background: #dbeafe; color: #1d4ed8; }
+
+.btn-rating-again:hover,
+.btn-rating-hard:hover,
+.btn-rating-good:hover,
+.btn-rating-easy:hover {
+  opacity: 0.8;
+}
+
+/* ---- Multiple choice ---- */
+
+.question-text {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--fluid-text);
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-default,
+.option-selected,
+.option-correct,
+.option-wrong,
+.option-disabled {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--fluid-border);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.12s;
+  background: var(--fluid-card);
+  color: var(--fluid-text);
+  width: 100%;
+}
+
+.option-default:hover { border-color: var(--fluid-accent); background: #eff6ff; }
+.option-selected { border-color: var(--fluid-accent); background: #eff6ff; color: var(--fluid-accent); }
+
+.option-correct { border-color: var(--fluid-correct); background: var(--fluid-correct-bg); color: var(--fluid-correct); }
+.option-wrong   { border-color: var(--fluid-wrong); background: var(--fluid-wrong-bg); color: var(--fluid-wrong); }
+.option-disabled { opacity: 0.5; cursor: default; }
+
+.option-letter {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fluid-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ---- Fill blank ---- */
+
+.fill-sentence {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  color: var(--fluid-text);
+}
+
+.blank-input {
+  border: none;
+  border-bottom: 2px solid var(--fluid-accent);
+  padding: 2px 4px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--fluid-text);
+  background: transparent;
+  outline: none;
+  min-width: 80px;
+  width: 120px;
+}
+
+.blank-skipped {
+  color: var(--fluid-text-muted);
+  border-bottom: 2px solid var(--fluid-border);
+  padding: 2px 4px;
+}
+
+.blank-submitted {
+  color: var(--fluid-text);
+  border-bottom: 2px solid var(--fluid-accent);
+  padding: 2px 4px;
+  font-weight: 600;
+}
+
+.translation-hint {
+  font-size: 13px;
+  color: var(--fluid-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.exercise-hint {
+  font-size: 13px;
+  color: var(--fluid-text-muted);
+  margin: 0;
+}
+
+/* ---- Translation challenge ---- */
+
+.prompt-text {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--fluid-text);
+}
+
+.direction-label {
+  font-size: 12px;
+  color: var(--fluid-text-muted);
+}
+
+.translation-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--fluid-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--fluid-text);
+  background: var(--fluid-surface);
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.translation-input:focus { border-color: var(--fluid-accent); }
+
+.translation-result {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.result-correct { background: var(--fluid-correct-bg); color: var(--fluid-correct); border: 1.5px solid var(--fluid-correct); }
+.result-wrong   { background: var(--fluid-wrong-bg); color: var(--fluid-wrong); border: 1.5px solid var(--fluid-wrong); }
+.result-skipped { color: var(--fluid-text-muted); border: 1.5px solid var(--fluid-border); }
+.result-submitted { color: var(--fluid-text); border: 1.5px solid var(--fluid-accent); }
+
+/* ---- Sentence arrange ---- */
+
+.arrange-drop-zone {
+  min-height: 48px;
+  border: 2px dashed var(--fluid-border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.arrange-placeholder {
+  color: var(--fluid-text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.word-chip-placed,
+.word-chip-available {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--fluid-border);
+  transition: all 0.12s;
+}
+
+.word-chip-placed { background: var(--fluid-accent); color: #fff; border-color: var(--fluid-accent); }
+.word-chip-placed:hover:not(:disabled) { opacity: 0.8; }
+
+.word-chip-available { background: var(--fluid-surface); color: var(--fluid-text); }
+.word-chip-available:hover { background: #e8e8e4; }
+
+.word-chip-disabled { opacity: 0.8; cursor: default; }
+
+.arrange-available {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

@@ -29,6 +29,10 @@
     "./ui": {
       "import": "./src/ui/index.ts",
       "types": "./src/ui/index.ts"
+    },
+    "./widgets": {
+      "import": "./src/widgets/index.ts",
+      "types": "./src/widgets/index.ts"
     }
   },
   "peerDependencies": {
