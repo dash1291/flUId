@@ -348,6 +348,48 @@
 .result-skipped { color: var(--fluid-text-muted); border: 1.5px solid var(--fluid-border); }
 .result-submitted { color: var(--fluid-text); border: 1.5px solid var(--fluid-accent); }
 
+/* ---- Vocabulary list ---- */
+
+.vocab-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vocab-item {
+  padding: 10px 12px;
+  background: var(--fluid-surface);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vocab-word {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fluid-text);
+}
+
+.vocab-pronunciation {
+  font-size: 12px;
+  color: var(--fluid-text-muted);
+  font-style: italic;
+}
+
+.vocab-translation {
+  font-size: 13px;
+  color: var(--fluid-text-muted);
+}
+
+.vocab-example {
+  font-size: 12px;
+  color: var(--fluid-text-muted);
+  border-top: 1px solid var(--fluid-border);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
 /* ---- Sentence arrange ---- */
 
 .arrange-drop-zone {
