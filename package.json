@@ -4,21 +4,31 @@
   "private": true,
   "description": "flUId — A reusable chat UI framework for LLM-powered applications with interactive widgets",
   "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "files": [
+    "src"
+  ],
   "exports": {
     ".": {
-      "import": "./src/index.ts"
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
     },
     "./hooks": {
-      "import": "./src/hooks/useAgent.ts"
+      "import": "./src/hooks/useAgent.ts",
+      "types": "./src/hooks/useAgent.ts"
     },
     "./server": {
-      "import": "./src/server/createAgentRoute.ts"
+      "import": "./src/server/createAgentRoute.ts",
+      "types": "./src/server/createAgentRoute.ts"
     },
     "./types": {
-      "import": "./src/types.ts"
+      "import": "./src/types.ts",
+      "types": "./src/types.ts"
     },
     "./ui": {
-      "import": "./src/ui/index.ts"
+      "import": "./src/ui/index.ts",
+      "types": "./src/ui/index.ts"
     }
   },
   "peerDependencies": {
