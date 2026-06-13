@@ -82,6 +82,16 @@ function isResolved(piMessages: PiMessage[], toolCallId: string): boolean {
   return piMessages.some(m => m.role === 'toolResult' && m.toolCallId === toolCallId)
 }
 
+// A result may only be appended for a tool call that actually made it into
+// history — if a turn was interrupted after the exercise rendered but before
+// its assistant message was saved, appending a result would orphan it and the
+// API would reject the conversation.
+function hasToolCall(piMessages: PiMessage[], toolCallId: string): boolean {
+  return piMessages.some(
+    m => m.role === 'assistant' && m.content.some(b => b.type === 'toolCall' && (b as PiToolCall).id === toolCallId),
+  )
+}
+
 function buildResultContent(toolName: string, result: unknown): string {
   const r = result as Record<string, unknown>
   switch (toolName) {
@@ -125,7 +135,7 @@ export function useAgent(config: AgentConfig) {
     if (pending.length === 0) return
 
     for (const item of pending) {
-      if (!isResolved(piMessagesRef.current, item.toolCallId)) {
+      if (!isResolved(piMessagesRef.current, item.toolCallId) && hasToolCall(piMessagesRef.current, item.toolCallId)) {
         piMessagesRef.current = [...piMessagesRef.current, makeSkipResult(item)]
       }
     }
@@ -349,6 +359,11 @@ export function useAgent(config: AgentConfig) {
 
     const resolved = isResolved(piMessagesRef.current, toolCallId)
     if (resolved) return
+
+    if (!hasToolCall(piMessagesRef.current, toolCallId)) {
+      console.warn('Discarding exercise result — tool call missing from history:', toolCallId)
+      return
+    }
 
     piMessagesRef.current = [
       ...piMessagesRef.current,

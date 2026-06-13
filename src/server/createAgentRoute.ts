@@ -62,6 +62,52 @@ export function createAgentRoute(config: AgentRouteConfig) {
   }
 }
 
+// The API validates every tool_use/tool_result pair in every request and
+// rejects the whole conversation on any mismatch. Stored histories may carry
+// such inconsistencies (e.g. an interrupted stream left a tool result without
+// its tool call); they are tolerated, not repaired — this only skips what the
+// API would reject when building the request. Stored data is never touched.
+function toSendableMessages(messages: AgentMessage[]): AgentMessage[] {
+  const out: Record<string, any>[] = []
+  // Tool calls from the latest assistant message still awaiting a result
+  const open = new Map<string, string>()
+
+  const closeOpen = () => {
+    for (const [id, name] of open) {
+      out.push({
+        role: 'toolResult',
+        toolCallId: id,
+        toolName: name,
+        content: [{ type: 'text', text: 'No result recorded.' }],
+        isError: false,
+        timestamp: Date.now(),
+      })
+    }
+    open.clear()
+  }
+
+  for (const m of messages as Record<string, any>[]) {
+    if (m.role === 'toolResult') {
+      if (open.has(m.toolCallId)) {
+        open.delete(m.toolCallId)
+        out.push(m)
+      } else {
+        console.warn('Skipping orphaned tool result:', m.toolCallId, m.toolName)
+      }
+      continue
+    }
+    closeOpen()
+    out.push(m)
+    if (m.role === 'assistant' && Array.isArray(m.content)) {
+      for (const block of m.content) {
+        if (block?.type === 'toolCall') open.set(block.id, block.name)
+      }
+    }
+  }
+  closeOpen()
+  return out as AgentMessage[]
+}
+
 async function runAgent(
   runParams: {
     messages: AgentMessage[]
@@ -73,12 +119,12 @@ async function runAgent(
 ) {
   const { newMessage, params } = runParams
   // Ensure tool result messages always have content array (old client data may be missing it)
-  const messages = (runParams.messages ?? []).map(m => {
+  const messages = toSendableMessages((runParams.messages ?? []).map(m => {
     if ((m as any).role === 'toolResult' && !(m as any).content) {
       return { ...m, content: [] }
     }
     return m
-  })
+  }))
 
   const model = getModel(config.provider as any, config.model as any)
   const tools = config.buildTools(params, send)
