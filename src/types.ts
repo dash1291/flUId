@@ -4,6 +4,7 @@
 export type DisplayItem =
   | { kind: 'user_message'; id: string; text: string }
   | { kind: 'assistant_text'; id: string; text: string; isStreaming: boolean }
+  | { kind: 'error'; id: string; details: string }
   | {
       kind: 'exercise'
       id: string

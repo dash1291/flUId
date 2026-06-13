@@ -308,6 +308,19 @@ export function AgentView({ agentConfig, registry, placeholder = 'Message your t
               </div>
             )
           }
+          if (item.kind === 'error') {
+            return (
+              <div key={item.id} ref={setItemRef(item.id)} className="message-row message-row-assistant">
+                <div className="bubble-assistant bubble-error">
+                  <p>Something went wrong. Please try again.</p>
+                  <details>
+                    <summary>See details</summary>
+                    <pre>{item.details}</pre>
+                  </details>
+                </div>
+              </div>
+            )
+          }
           return null
         })}
 

@@ -262,11 +262,20 @@ export function useAgent(config: AgentConfig) {
 
           if (event.type === 'error') {
             console.error('Agent error:', event.message)
+            streamingTextIdRef.current = null
+            setDisplayItems(prev => [
+              ...prev,
+              { kind: 'error', id: `error-${Date.now()}`, details: String(event.message) },
+            ])
           }
         }
       }
     } catch (err) {
       console.error('Stream read error:', err)
+      setDisplayItems(prev => [
+        ...prev,
+        { kind: 'error', id: `error-${Date.now()}`, details: String(err) },
+      ])
     } finally {
       isStreamingRef.current = false
       setIsStreaming(false)

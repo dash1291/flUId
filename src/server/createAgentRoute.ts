@@ -105,6 +105,13 @@ async function runAgent(
     }
     if (event.type === 'agent_end') {
       const msgs = event.messages
+      const last = msgs[msgs.length - 1] as unknown as Record<string, unknown> | undefined
+      if (last?.role === 'assistant' && last.stopReason === 'error') {
+        // API failures end the turn normally with an empty assistant message;
+        // without this the client renders nothing and the failure is invisible.
+        console.error('Agent turn failed:', last.errorMessage)
+        send({ type: 'error', message: String(last.errorMessage ?? 'Unknown agent error') })
+      }
       const awaitingIdx = msgs.findIndex(
         m => (m as unknown as Record<string, unknown>).role === 'toolResult'
           && ((m as unknown as Record<string, unknown>).details as Record<string, unknown>)?.__awaiting,
