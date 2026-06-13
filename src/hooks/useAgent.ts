@@ -92,6 +92,8 @@ function buildResultContent(toolName: string, result: unknown): string {
       return `User selected index: ${r.selected_index}`
     case 'show_arrange':
       return `User arranged: [${(r.order as string[]).join(', ')}]`
+    case 'show_pronunciation_drill':
+      return `Speech-to-text heard: "${r.spoken}"`
     case 'show_flashcard':
       return `User self-rating: ${r.rating}`
     default:
