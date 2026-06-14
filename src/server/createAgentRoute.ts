@@ -1,6 +1,7 @@
 import { Agent } from '@earendil-works/pi-agent-core'
 import { getModel, getEnvApiKey } from '@earendil-works/pi-ai'
 import { streamSimpleAnthropic } from '@earendil-works/pi-ai/anthropic'
+import type { StreamFunction } from '@earendil-works/pi-ai'
 import type { AgentTool, AgentMessage } from '@earendil-works/pi-agent-core'
 
 const encoder = new TextEncoder()
@@ -10,7 +11,7 @@ function sseChunk(event: object): Uint8Array {
 }
 
 export interface AgentRouteConfig {
-  /** Model provider name passed to getModel() */
+  /** Model provider name passed to getModel() and getEnvApiKey() */
   provider: string
   /** Model name passed to getModel() */
   model: string
@@ -21,6 +22,15 @@ export interface AgentRouteConfig {
     params: Record<string, unknown>,
     send: (event: object) => void,
   ) => AgentTool<any>[]
+  /**
+   * Pi stream function matching `provider`. Pi ships one per provider, all
+   * sharing the same SimpleStreamOptions shape, so any of them works here —
+   * import the one you need, e.g.:
+   *   import { streamSimpleOpenAIResponses } from '@earendil-works/pi-ai/openai-responses'
+   *   import { streamSimpleGoogle } from '@earendil-works/pi-ai/google'
+   * Defaults to Anthropic (`streamSimpleAnthropic`).
+   */
+  streamFn?: StreamFunction<any, any>
 }
 
 export function createAgentRoute(config: AgentRouteConfig) {
@@ -139,7 +149,7 @@ async function runAgent(
     },
     getApiKey: () => getEnvApiKey(config.provider),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    streamFn: streamSimpleAnthropic as any,
+    streamFn: (config.streamFn ?? streamSimpleAnthropic) as any,
   })
 
   agent.subscribe(event => {
