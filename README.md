@@ -332,14 +332,15 @@ function MyApp() {
 
 ## Features Provided Out of the Box
 
-- **Streaming text** with typing cursor animation
-- **Reverse pagination** — loads only recent messages, infinite scroll up for older
+- **Tool call lifecycle** — render widget → collect input → feed result back to LLM
+- **Token-by-token streaming** of assistant responses over SSE
+- **Windowed rendering** — renders only the most recent messages and reveals older
+  ones as you scroll up (preserving scroll position), so long conversations stay fast
 - **Message search UI** — search bar with result highlighting; it POSTs `{ query }`
   to `/api/agent/search` and renders the `{ results }` it returns. You implement
   that route against your own store (the search backend is not provided)
-- **Tool call lifecycle** — render widget → collect input → feed result back to LLM
-- **Auto-save** to localStorage and hooks for remote persistence
-- **Queued messages** — user can type while LLM is still streaming; message auto-sends after turn completes
+- **Auto-save** to localStorage, plus hooks for remote persistence (`onConversationSave`)
+- **Queued messages** — type while the LLM is still streaming; the message auto-sends after the turn completes
 
 ## Built-in Widgets
 
