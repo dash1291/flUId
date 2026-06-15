@@ -156,12 +156,14 @@ export function useAgent(config: AgentConfig) {
         i.kind === 'assistant_text' && i.isStreaming ? { ...i, isStreaming: false } : i,
       ),
     )
-    const key = configRef.current.persistKey
-    if (key) lsSet(key, { piMessages: fullMessages } satisfies PersistedState)
-    try {
-      configRef.current.onConversationSave?.(fullMessages)
-    } catch (err) {
-      console.error('onConversationSave error:', err)
+    if (!configRef.current.serverHistory) {
+      const key = configRef.current.persistKey
+      if (key) lsSet(key, { piMessages: fullMessages } satisfies PersistedState)
+      try {
+        configRef.current.onConversationSave?.(fullMessages)
+      } catch (err) {
+        console.error('onConversationSave error:', err)
+      }
     }
     if (withTurnComplete) {
       try {
@@ -172,7 +174,7 @@ export function useAgent(config: AgentConfig) {
     }
   }
 
-  const sendMessage = useCallback(async (text: string, visible: boolean) => {
+  const sendMessage = useCallback(async (text: string, visible: boolean, toolResult?: PiToolResultMessage) => {
     if (isStreamingRef.current) return
     isStreamingRef.current = true
     setIsStreaming(true)
@@ -186,7 +188,7 @@ export function useAgent(config: AgentConfig) {
       ])
     }
 
-    const { endpoint, getRequestParams } = configRef.current
+    const { endpoint, getRequestParams, serverHistory } = configRef.current
     const params = getRequestParams()
 
     try {
@@ -194,13 +196,21 @@ export function useAgent(config: AgentConfig) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: piMessagesRef.current,
+          ...(serverHistory ? { toolResult } : { messages: piMessagesRef.current }),
           newMessage: text || undefined,
           ...params,
         }),
       })
 
-      const reader = response.body!.getReader()
+      if (!response.ok || !response.body) {
+        setDisplayItems(prev => [
+          ...prev,
+          { kind: 'error', id: `error-${Date.now()}`, details: `Request failed (${response.status})` },
+        ])
+        return
+      }
+
+      const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
 
@@ -299,10 +309,14 @@ export function useAgent(config: AgentConfig) {
 
   useEffect(() => {
     let restored: PiMessage[] = []
-    const key = configRef.current.persistKey
-    if (key) {
-      const saved = lsGet<PersistedState>(key)
-      restored = saved?.piMessages ?? []
+    if (configRef.current.serverHistory) {
+      restored = (configRef.current.initialMessages as PiMessage[] | undefined) ?? []
+    } else {
+      const key = configRef.current.persistKey
+      if (key) {
+        const saved = lsGet<PersistedState>(key)
+        restored = saved?.piMessages ?? []
+      }
     }
 
     if (restored.length > 0) {
@@ -365,12 +379,13 @@ export function useAgent(config: AgentConfig) {
       return
     }
 
-    piMessagesRef.current = [
-      ...piMessagesRef.current,
-      { role: 'toolResult', toolCallId, toolName: item.toolName, content: [{ type: 'text', text: buildResultContent(item.toolName, result) }], isError: false, timestamp: Date.now(), details: result },
-    ]
-    // Empty string is falsy — server calls agent.continue() instead of agent.prompt()
-    sendMessage('', false)
+    const toolResultMessage: PiToolResultMessage = {
+      role: 'toolResult', toolCallId, toolName: item.toolName, content: [{ type: 'text', text: buildResultContent(item.toolName, result) }], isError: false, timestamp: Date.now(), details: result,
+    }
+    piMessagesRef.current = [...piMessagesRef.current, toolResultMessage]
+    // Empty string is falsy — server calls agent.continue() instead of agent.prompt().
+    // In server-history mode the result is sent as a delta; otherwise it rides in piMessages.
+    sendMessage('', false, configRef.current.serverHistory ? toolResultMessage : undefined)
   }, [sendMessage])
 
   return { displayItems, isStreaming, sendUserMessage, submitExerciseResult }

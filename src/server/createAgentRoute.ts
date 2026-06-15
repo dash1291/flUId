@@ -31,14 +31,36 @@ export interface AgentRouteConfig {
    * Defaults to Anthropic (`streamSimpleAnthropic`).
    */
   streamFn?: StreamFunction<any, any>
+  /**
+   * Returns the base conversation history. When it returns an array (possibly
+   * empty), that array is the history and the request body's `messages` is
+   * ignored; the client sends only the new delta (`newMessage` or `toolResult`).
+   * When it returns `null`, the request body's `messages` is used instead.
+   * Receives the request so it can read auth cookies.
+   */
+  loadHistory?: (
+    params: Record<string, unknown>,
+    request: Request,
+  ) => Promise<AgentMessage[] | null>
+  /**
+   * Called with the full conversation after a turn settles, when `loadHistory`
+   * returned a non-null array. Awaited before the response stream closes. Not
+   * called when the request body's `messages` was used.
+   */
+  saveHistory?: (
+    messages: AgentMessage[],
+    params: Record<string, unknown>,
+    request: Request,
+  ) => Promise<void>
 }
 
 export function createAgentRoute(config: AgentRouteConfig) {
   return async function POST(request: Request): Promise<Response> {
     const body = await request.json()
-    const { messages, newMessage, ...params } = body as {
+    const { messages, newMessage, toolResult, ...params } = body as {
       messages: AgentMessage[]
       newMessage?: string
+      toolResult?: AgentMessage
     } & Record<string, unknown>
 
     let ctrl!: ReadableStreamDefaultController<Uint8Array>
@@ -54,7 +76,7 @@ export function createAgentRoute(config: AgentRouteConfig) {
     const stream = new ReadableStream<Uint8Array>({
       start(c) {
         ctrl = c
-        runAgent({ messages, newMessage, params }, config, send)
+        runAgent({ messages, newMessage, toolResult, params, request }, config, send)
           .catch(err => {
             send({ type: 'error', message: err instanceof Error ? err.message : String(err) })
           })
@@ -118,23 +140,44 @@ function toSendableMessages(messages: AgentMessage[]): AgentMessage[] {
   return out as AgentMessage[]
 }
 
+// Tool result messages from older client data may be missing the content array.
+function withContent(messages: AgentMessage[]): AgentMessage[] {
+  return messages.map(m =>
+    (m as any).role === 'toolResult' && !(m as any).content ? { ...m, content: [] } : m,
+  )
+}
+
 async function runAgent(
   runParams: {
     messages: AgentMessage[]
     newMessage?: string
+    toolResult?: AgentMessage
     params: Record<string, unknown>
+    request: Request
   },
   config: AgentRouteConfig,
   send: (event: object) => void,
 ) {
-  const { newMessage, params } = runParams
-  // Ensure tool result messages always have content array (old client data may be missing it)
-  const messages = toSendableMessages((runParams.messages ?? []).map(m => {
-    if ((m as any).role === 'toolResult' && !(m as any).content) {
-      return { ...m, content: [] }
+  const { newMessage, toolResult, params, request } = runParams
+
+  let base: AgentMessage[]
+  let serverAuthoritative = false
+  if (config.loadHistory) {
+    const loaded = await config.loadHistory(params, request)
+    if (loaded != null) {
+      base = loaded
+      serverAuthoritative = true
+    } else {
+      base = runParams.messages ?? []
     }
-    return m
-  }))
+  } else {
+    base = runParams.messages ?? []
+  }
+
+  // The submitted tool result arrives as a delta; append it before continuing.
+  if (toolResult) base = [...base, toolResult]
+
+  const context = toSendableMessages(withContent(base))
 
   const model = getModel(config.provider as any, config.model as any)
   const tools = config.buildTools(params, send)
@@ -145,13 +188,14 @@ async function runAgent(
       model,
       systemPrompt,
       tools,
-      messages: messages ?? [],
+      messages: context,
     },
     getApiKey: () => getEnvApiKey(config.provider),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     streamFn: (config.streamFn ?? streamSimpleAnthropic) as any,
   })
 
+  let newMsgs: AgentMessage[] = []
   agent.subscribe(event => {
     if (event.type === 'message_update') {
       const { assistantMessageEvent } = event
@@ -160,23 +204,7 @@ async function runAgent(
       }
     }
     if (event.type === 'agent_end') {
-      const msgs = event.messages
-      const last = msgs[msgs.length - 1] as unknown as Record<string, unknown> | undefined
-      if (last?.role === 'assistant' && last.stopReason === 'error') {
-        // API failures end the turn normally with an empty assistant message;
-        // without this the client renders nothing and the failure is invisible.
-        console.error('Agent turn failed:', last.errorMessage)
-        send({ type: 'error', message: String(last.errorMessage ?? 'Unknown agent error') })
-      }
-      const awaitingIdx = msgs.findIndex(
-        m => (m as unknown as Record<string, unknown>).role === 'toolResult'
-          && ((m as unknown as Record<string, unknown>).details as Record<string, unknown>)?.__awaiting,
-      )
-      if (awaitingIdx !== -1) {
-        send({ type: 'paused', messages: msgs.slice(0, awaitingIdx) })
-      } else {
-        send({ type: 'done', messages: msgs })
-      }
+      newMsgs = event.messages
     }
   })
 
@@ -185,4 +213,26 @@ async function runAgent(
   } else {
     await agent.continue()
   }
+
+  const last = newMsgs[newMsgs.length - 1] as unknown as Record<string, unknown> | undefined
+  if (last?.role === 'assistant' && last.stopReason === 'error') {
+    // API failures end the turn normally with an empty assistant message;
+    // without this the client renders nothing and the failure is invisible.
+    console.error('Agent turn failed:', last.errorMessage)
+    send({ type: 'error', message: String(last.errorMessage ?? 'Unknown agent error') })
+  }
+
+  // A paused exercise leaves a synthetic awaiting tool result; persist and send
+  // the turn up to that point so the real result can be appended next request.
+  const awaitingIdx = newMsgs.findIndex(
+    m => (m as unknown as Record<string, unknown>).role === 'toolResult'
+      && ((m as unknown as Record<string, unknown>).details as Record<string, unknown>)?.__awaiting,
+  )
+  const turnMsgs = awaitingIdx !== -1 ? newMsgs.slice(0, awaitingIdx) : newMsgs
+
+  if (serverAuthoritative && config.saveHistory) {
+    await config.saveHistory([...context, ...turnMsgs], params, request)
+  }
+
+  send({ type: awaitingIdx !== -1 ? 'paused' : 'done', messages: turnMsgs })
 }

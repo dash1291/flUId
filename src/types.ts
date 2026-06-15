@@ -41,6 +41,17 @@ export interface AgentConfig {
   getRequestParams: () => Record<string, unknown>
   startTrigger?: string
   persistKey?: string
+  /**
+   * When true, the server holds the conversation history: requests send only
+   * the new delta (`newMessage` / `toolResult`), and local persistence
+   * (`persistKey`, `onConversationSave`) is skipped.
+   */
+  serverHistory?: boolean
+  /**
+   * Initial conversation used to rebuild the display on mount when
+   * `serverHistory` is true. Ignored otherwise (localStorage is used instead).
+   */
+  initialMessages?: unknown[]
   onExerciseResult?: (
     toolName: string,
     input: Record<string, unknown>,
