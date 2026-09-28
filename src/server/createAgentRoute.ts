@@ -1,7 +1,7 @@
 import { Agent } from '@earendil-works/pi-agent-core'
 import { getModel, getEnvApiKey } from '@earendil-works/pi-ai'
 import { streamSimpleAnthropic } from '@earendil-works/pi-ai/anthropic'
-import type { StreamFunction } from '@earendil-works/pi-ai'
+import type { Model, StreamFunction } from '@earendil-works/pi-ai'
 import type { AgentTool, AgentMessage } from '@earendil-works/pi-agent-core'
 
 const encoder = new TextEncoder()
@@ -13,8 +13,8 @@ function sseChunk(event: object): Uint8Array {
 export interface AgentRouteConfig {
   /** Model provider name passed to getModel() and getEnvApiKey() */
   provider: string
-  /** Model name passed to getModel() */
-  model: string
+  /** Model name passed to getModel(), or a Model object for models pi-ai does not know */
+  model: string | Model<any>
   /** Function that builds the system prompt from request params */
   buildSystemPrompt: (params: Record<string, unknown>) => string
   /** Function that builds the tool list from request params and the SSE send function */
@@ -179,7 +179,7 @@ async function runAgent(
 
   const context = toSendableMessages(withContent(base))
 
-  const model = getModel(config.provider as any, config.model as any)
+  const model = typeof config.model === 'string' ? getModel(config.provider as any, config.model as any) : config.model
   const tools = config.buildTools(params, send)
   const systemPrompt = config.buildSystemPrompt(params)
 
