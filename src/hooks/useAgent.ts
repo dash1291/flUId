@@ -127,6 +127,10 @@ export function useAgent(config: AgentConfig) {
   const streamingTextIdRef = useRef<string | null>(null)
   // Message queued to send after current agent turn completes (already shown in UI)
   const pendingUserMessageRef = useRef<string | null>(null)
+  // Exercise result submitted while the turn was still streaming (e.g. a widget
+  // that acknowledges itself on mount); sent once the turn's messages are in.
+  const pendingToolResultRef = useRef<{ toolCallId: string; toolName: string; result: unknown } | null>(null)
+  const sendToolResultRef = useRef<(toolCallId: string, toolName: string, result: unknown) => void>(() => {})
 
   function skipPendingExercises() {
     const pending = displayItemsRef.current.filter(
@@ -299,7 +303,12 @@ export function useAgent(config: AgentConfig) {
     } finally {
       isStreamingRef.current = false
       setIsStreaming(false)
-      if (followUp) {
+      const pendingResult = pendingToolResultRef.current
+      if (pendingResult) {
+        pendingToolResultRef.current = null
+        if (followUp) pendingUserMessageRef.current = followUp
+        sendToolResultRef.current(pendingResult.toolCallId, pendingResult.toolName, pendingResult.result)
+      } else if (followUp) {
         skipPendingExercises()
         sendMessage(followUp, false)
       }
@@ -371,8 +380,17 @@ export function useAgent(config: AgentConfig) {
 
     configRef.current.onExerciseResult?.(item.toolName, item.input, result)
 
-    const resolved = isResolved(piMessagesRef.current, toolCallId)
-    if (resolved) return
+    // The tool call only enters history when the turn's final event arrives, so
+    // a result submitted mid-stream is held until then.
+    if (isStreamingRef.current) {
+      pendingToolResultRef.current = { toolCallId, toolName: item.toolName, result }
+      return
+    }
+    sendToolResult(toolCallId, item.toolName, result)
+  }, [sendMessage])
+
+  const sendToolResult = useCallback((toolCallId: string, toolName: string, result: unknown) => {
+    if (isResolved(piMessagesRef.current, toolCallId)) return
 
     if (!hasToolCall(piMessagesRef.current, toolCallId)) {
       console.warn('Discarding exercise result — tool call missing from history:', toolCallId)
@@ -380,13 +398,14 @@ export function useAgent(config: AgentConfig) {
     }
 
     const toolResultMessage: PiToolResultMessage = {
-      role: 'toolResult', toolCallId, toolName: item.toolName, content: [{ type: 'text', text: buildResultContent(item.toolName, result) }], isError: false, timestamp: Date.now(), details: result,
+      role: 'toolResult', toolCallId, toolName, content: [{ type: 'text', text: buildResultContent(toolName, result) }], isError: false, timestamp: Date.now(), details: result,
     }
     piMessagesRef.current = [...piMessagesRef.current, toolResultMessage]
     // Empty string is falsy — server calls agent.continue() instead of agent.prompt().
     // In server-history mode the result is sent as a delta; otherwise it rides in piMessages.
     sendMessage('', false, configRef.current.serverHistory ? toolResultMessage : undefined)
   }, [sendMessage])
+  sendToolResultRef.current = sendToolResult
 
   return { displayItems, isStreaming, sendUserMessage, submitExerciseResult }
 }
