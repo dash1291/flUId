@@ -57,6 +57,8 @@ export interface AgentConfig {
     input: Record<string, unknown>,
     result: unknown,
   ) => void
+  /** Called when the agent shows a widget, including ones that need no answer. */
+  onToolCall?: (toolName: string, input: Record<string, unknown>) => void
   onTurnComplete?: (newMessages: unknown[]) => void
   onConversationSave?: (fullMessages: unknown[]) => void
   onSessionEnd?: () => void

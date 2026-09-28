@@ -258,6 +258,11 @@ export function useAgent(config: AgentConfig) {
 
           if (event.type === 'tool_call') {
             streamingTextIdRef.current = null
+            try {
+              configRef.current.onToolCall?.(event.toolName as string, event.args as Record<string, unknown>)
+            } catch (err) {
+              console.error('onToolCall error:', err)
+            }
             setDisplayItems(prev => [
               ...prev,
               {
