@@ -1,6 +1,7 @@
 'use client'
 
 import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface Props {
   role: 'user' | 'assistant'
@@ -38,7 +39,7 @@ export function MessageBubble({ role, text, isStreaming, highlight }: Props) {
         {highlight ? (
           <HighlightedText text={text} query={highlight} />
         ) : role === 'assistant' ? (
-          <Markdown>{text}</Markdown>
+          <Markdown remarkPlugins={[remarkGfm]}>{text}</Markdown>
         ) : (
           text
         )}
