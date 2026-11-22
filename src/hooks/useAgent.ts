@@ -406,7 +406,7 @@ export function useAgent(config: AgentConfig) {
     }
 
     const toolResultMessage: PiToolResultMessage = {
-      role: 'toolResult', toolCallId, toolName, content: [{ type: 'text', text: buildResultContent(toolName, result) }], isError: false, timestamp: Date.now(), details: result,
+      role: 'toolResult', toolCallId, toolName, content: [{ type: 'text', text: configRef.current.formatResult?.(toolName, result) ?? buildResultContent(toolName, result) }], isError: false, timestamp: Date.now(), details: result,
     }
     piMessagesRef.current = [...piMessagesRef.current, toolResultMessage]
     // Empty string is falsy — server calls agent.continue() instead of agent.prompt().
