@@ -3,6 +3,8 @@ import { getModel, getEnvApiKey } from '@earendil-works/pi-ai'
 import { streamSimpleAnthropic } from '@earendil-works/pi-ai/anthropic'
 import type { Model, StreamFunction } from '@earendil-works/pi-ai'
 import type { AgentTool, AgentMessage } from '@earendil-works/pi-agent-core'
+import { compactHistory } from './compaction'
+import type { CompactionConfig } from './compaction'
 
 const encoder = new TextEncoder()
 
@@ -52,6 +54,13 @@ export interface AgentRouteConfig {
     params: Record<string, unknown>,
     request: Request,
   ) => Promise<void>
+  /**
+   * Summarizes older turns into a shorter form when the loaded history grows
+   * large. Only applied on the server-authoritative path (loadHistory returned
+   * an array). `summarize` receives the serialized older turns and the previous
+   * summary (or null) and returns the new summary text.
+   */
+  compaction?: CompactionConfig
 }
 
 export function createAgentRoute(config: AgentRouteConfig) {
@@ -160,6 +169,8 @@ async function runAgent(
 ) {
   const { newMessage, toolResult, params, request } = runParams
 
+  const model = typeof config.model === 'string' ? getModel(config.provider as any, config.model as any) : config.model
+
   let base: AgentMessage[]
   let serverAuthoritative = false
   if (config.loadHistory) {
@@ -174,12 +185,21 @@ async function runAgent(
     base = runParams.messages ?? []
   }
 
+  // A failed summary must not fail the turn; the history is sent whole and
+  // compaction is tried again on the next request.
+  if (serverAuthoritative && config.compaction) {
+    try {
+      base = await compactHistory(base, config.compaction, (model as any).contextWindow ?? 200000)
+    } catch (err) {
+      console.warn('History compaction failed:', err instanceof Error ? err.message : err)
+    }
+  }
+
   // The submitted tool result arrives as a delta; append it before continuing.
   if (toolResult) base = [...base, toolResult]
 
   const context = toSendableMessages(withContent(base))
 
-  const model = typeof config.model === 'string' ? getModel(config.provider as any, config.model as any) : config.model
   const tools = config.buildTools(params, send)
   const systemPrompt = config.buildSystemPrompt(params)
 

@@ -301,6 +301,17 @@ export function AgentView({ agentConfig, registry, placeholder = 'Message your t
               </div>
             )
           }
+          if (item.kind === 'summary') {
+            return (
+              <div key={item.id} ref={setItemRef(item.id)} className="summary-note">
+                <span className="summary-note-label">Earlier conversation summarized</span>
+                <details>
+                  <summary>View summary</summary>
+                  <p>{item.text}</p>
+                </details>
+              </div>
+            )
+          }
           if (item.kind === 'exercise') {
             return (
               <div key={item.id} ref={setItemRef(item.id)} className="exercise-wrapper">
