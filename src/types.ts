@@ -63,6 +63,11 @@ export interface AgentConfig {
     input: Record<string, unknown>,
     result: unknown,
   ) => void
+  /**
+   * Writes the text the model reads as a widget's tool result. Return
+   * undefined to fall back to the built-in text for that tool.
+   */
+  formatResult?: (toolName: string, result: unknown) => string | undefined
   /** Called when the agent shows a widget, including ones that need no answer. */
   onToolCall?: (toolName: string, input: Record<string, unknown>) => void
   onTurnComplete?: (newMessages: unknown[]) => void
