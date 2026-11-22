@@ -9,7 +9,7 @@ export type {
   ExerciseComponentProps,
   DisplayItem,
 } from './types'
-export { isSkipped } from './types'
+export { isSkipped, SUMMARY_PREFIX } from './types'
 export { AgentView } from './ui/AgentView'
 export { ComponentHost } from './ui/ComponentHost'
 export { MessageBubble } from './ui/MessageBubble'

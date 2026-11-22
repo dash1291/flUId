@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { lsGet, lsSet } from '../memory/localStorage'
 import type { AgentConfig, DisplayItem } from '../types'
+import { SUMMARY_PREFIX } from '../types'
 
 // Mirrors Pi message types (client-safe — not imported from the Pi server package)
 interface PiTextContent { type: 'text'; text: string }
@@ -37,7 +38,9 @@ function buildDisplayItems(messages: PiMessage[], startTrigger?: string): Displa
               .filter(b => b.type === 'text')
               .map(b => b.text)
               .join('')
-      if (text && text !== startTrigger) {
+      if (text.startsWith(SUMMARY_PREFIX)) {
+        items.push({ kind: 'summary', id: `msg-${msgIdx}-summary`, text: text.slice(SUMMARY_PREFIX.length) })
+      } else if (text && text !== startTrigger) {
         items.push({ kind: 'user_message', id: `msg-${msgIdx}-user`, text })
       }
     } else if (msg.role === 'assistant') {

@@ -1,9 +1,15 @@
+// Prefix marking a synthetic message that holds a compaction summary of
+// earlier turns. Shared by the server (which writes it) and the client (which
+// detects it to render a summary note instead of a user bubble).
+export const SUMMARY_PREFIX = 'Summary of earlier conversation:\n\n'
+
 // UI display items
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type DisplayItem =
   | { kind: 'user_message'; id: string; text: string }
   | { kind: 'assistant_text'; id: string; text: string; isStreaming: boolean }
+  | { kind: 'summary'; id: string; text: string }
   | { kind: 'error'; id: string; details: string }
   | {
       kind: 'exercise'
